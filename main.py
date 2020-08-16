@@ -13,24 +13,6 @@ from matplotlib import pyplot as plt
 from statsmodels.graphics.tsaplots import plot_acf
 import statsmodels.api as sm
 from statsmodels.distributions.empirical_distribution import ECDF
-from myfunc import OLS_mean,kernel_test, my_bootstrap, loc_poly
-
-# %% [markdown]
-# In the next part we simulate the kernel-based test with sin() curve. 
-
-# %% Simulation
-np.random.seed(5)
-X = np.arange(0, 5, 0.01)
-N = X.shape[0]
-Y = np.sin(X) + np.random.normal(scale=1, size=N)  
-m = OLS_mean(X, Y)
-u = Y - m
-plt.figure()
-plt.scatter(X, Y)
-plt.scatter(X, m)
-plt.scatter(X,u)
-Test_0= kernel_test(u, X)
-result = my_bootstrap(X, Y, B=500)
 # %% [markdown] 
 # ## Data 
 # The data is from CRSP beta-suite, consisting of daily data of 253 stocks, all of which are constituents of SP500, from 1990-01-02 to 2019-12-31. The factors are FF 3 factors plus Carhart's factor. 

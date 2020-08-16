@@ -1,12 +1,32 @@
 # %% import required libraries
 import pandas as pd
 import numpy as np
-from scipy import linalg as LA
-from scipy import stats as ST
 from matplotlib import pyplot as plt
-from statsmodels.graphics.tsaplots import plot_acf
 import statsmodels.api as sm
-from statsmodels.distributions.empirical_distribution import ECDF
+from scipy import stats as ST
+# # OLS Regression Class
+# Return OLS estimate of the conditional mean as a col.vector
+# %% OLS parameter estimate
+class OLSRegression():
+    def __init__(self, X, Y):
+        self.X = X
+        self.Y = Y
+
+    def beta_hat(self, intercept=1):
+        if intercept == 1:
+            beta = sm.OLS(self.Y, sm.add_constant(self.X)).fit().params.T
+        elif intercept == 0:
+            beta = sm.OLS(self.Y, self.X).fit().params.T
+        else:
+            print('Intercept error.')
+        return beta
+
+    def y_hat(self, intercept=1):
+        if intercept == 1:
+            m = sm.OLS(self.Y, sm.add_constant(self.X)).fit().predict()
+        elif intercept == 0:
+            m = sm.OLS(self.Y, self.X).fit().predict()
+        return m
 
 # %% The local linear regression
 # We take Gaussian Kernel
@@ -50,17 +70,11 @@ def kernel_test(u, X):
     sigma_hat = np.sqrt(2*h/N/(N-1)*(u.T**2)@(K**2)@(u**2))
     T = N*(h**0.5)*I/sigma_hat
     return T, sigma_hat, k
-# %% Return OLS estimate of the conditional mean as a col.vector
-def OLS_mean(X, Y):
-    m = sm.add_constant(X)@sm.OLS(Y, sm.add_constant(X)).fit().params.T
-    return m
+# %% [markdown] # %% Bootstrap Test
 
-
-# %% Bootstrap Test
-
-def my_bootstrap(X, Y, B=1000):
+def my_bootstrap(X, Y, B=1000, intercept = 1):
     N = Y.shape[0]
-    m = OLS_mean(X, Y)
+    m = OLSRegression(X, Y).y_hat(intercept = intercept)
     u = Y - m
     Test_0 = kernel_test(u, X)[0]
     Test = np.empty(B)
@@ -71,7 +85,7 @@ def my_bootstrap(X, Y, B=1000):
         # plt.scatter(X,u)
         # plt.scatter(X,u_star)
         Y_star = m + u_star
-        m_star = OLS_mean(X, Y_star)
+        m_star = OLSRegression(X, Y_star).y_hat(intercept= intercept)
         u_star_hat = Y_star - m_star
         Test[j] = kernel_test(u_star_hat, X)[0]
     Critical_left = np.quantile(Test, q=0.025)
