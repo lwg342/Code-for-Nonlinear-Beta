@@ -43,29 +43,38 @@ average_ret = np.array(RET.mean())
 average_ret_excess = np.array(RET_excess.mean())
 baseline_factor = ['MktRf']
 # %% Test on Market Factor
-beta = 
 # %% Test on additional factors
 j = 45
 FACTOR.iloc[:, j]
 beta = np.array(OLSRegression(
-    np.array([FACTOR['MktRf'], FACTOR.HML, FACTOR.SMB]).T, RET_excess).beta_hat().iloc[:, 1:])
+    np.array([FACTOR.MktRf, FACTOR.HML, FACTOR.SMB]).T, RET_excess).beta_hat().iloc[:, 1:])
 # beta = np.array(OLSRegression(
 #     np.array(FACTOR['MktRf']), RET_excess).beta_hat().iloc[:, 1:])
 print(beta.shape)
 m = OLSRegression(beta, average_ret_excess).y_hat(intercept=0)
+m1 = OLSRegression(beta, average_ret_excess).y_hat(intercept=1)
 gamma = OLSRegression(beta, average_ret_excess).beta_hat(intercept=0)
+print(gamma)
 plt.figure()
 plt.xlim(0,2)
 plt.ylim(0,0.02)
 plt.scatter(beta[:, 0], m)
+plt.scatter(beta[:, 0], m1)
 plt.scatter(beta[:, 0], average_ret_excess)
 plt.figure()
 plt.xlim(-1,1)
 plt.ylim(0,0.02)
 plt.scatter(beta[:, 1], m)
+plt.scatter(beta[:, 1], m1)
 plt.scatter(beta[:, 1], average_ret_excess)
+plt.figure()
+plt.xlim(-1,1)
+plt.ylim(0,0.02)
+plt.scatter(beta[:, 2], m)
+plt.scatter(beta[:, 2], m1)
+plt.scatter(beta[:, 2], average_ret_excess)
 a = my_bootstrap(beta, average_ret_excess)
-b = my_bootstrap(beta, average_ret_excess, intercept= 0)
+b = my_bootstrap(beta, average_ret_excess, intercept=0)
 print(a)
 print(b)
 # %% Apply to all factors 
@@ -76,9 +85,10 @@ for i in FACTOR.columns[~FACTOR.columns.isin([baseline_factor])]:
     select = baseline_factor + [i]
     beta = np.array(OLSRegression(
         np.array(FACTOR[select]), RET_excess).beta_hat().iloc[:, 1:])
-    Result[j], Critical_left[j], Critical_right[j] = my_bootstrap(beta, average_ret_excess, intercept= 0)
-    print(j)
-    print(time.time() - tic)
+    Result[j], Critical_left[j], Critical_right[j] = my_bootstrap(beta, average_ret_excess, B = 250, intercept= 1)
+    print("Iteration",j, "Elapsed Time =", time.time() - tic)
+    if Result[j] < Critical_left[j] or Result[j] > Critical_right[j]:
+        print("The factor ", i, "is nonlinear!")
     j = j + 1
 pd.DataFrame([Result, Critical_left,Critical_right]).to_csv('result.csv')
 # %%
