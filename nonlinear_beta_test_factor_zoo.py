@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import statsmodels.api as sm
 from statsmodels.distributions.empirical_distribution import ECDF
 from myfunc import OLSRegression, kernel_test, loc_poly,my_bootstrap
-
+import time
 # %% [markdown]
 # # Import Data
 # 1. Return data. Here I use S&P500 constituents, can be extended to more stocks
@@ -41,9 +41,8 @@ Critical_left = np.zeros(147)
 Critical_right = np.zeros(147)
 average_ret = np.array(RET.mean())
 average_ret_excess = np.array(RET_excess.mean())
-baseline_factor = ['MktRf']
-# %% Test on Market Factor
-# %% Test on additional factors
+
+# %% Test the procedure on one additional factors
 j = 45
 FACTOR.iloc[:, j]
 beta = np.array(OLSRegression(
@@ -78,29 +77,41 @@ b = my_bootstrap(beta, average_ret_excess, intercept=0)
 print(a)
 print(b)
 # %% Apply to all factors 
-import time
-j = 0
-for i in FACTOR.columns[~FACTOR.columns.isin([baseline_factor])]:
-    tic = time.time()
-    select = baseline_factor + [i]
-    beta = np.array(OLSRegression(
-        np.array(FACTOR[select]), RET_excess).beta_hat().iloc[:, 1:])
-    Result[j], Critical_left[j], Critical_right[j] = my_bootstrap(beta, average_ret_excess, B = 250, intercept= 1)
-    print("Iteration",j, "Elapsed Time =", time.time() - tic)
-    if Result[j] < Critical_left[j] or Result[j] > Critical_right[j]:
-        print("The factor ", i, "is nonlinear!")
-    j = j + 1
-pd.DataFrame([Result, Critical_left,Critical_right]).to_csv('result.csv')
-# %%
-result = pd.read_csv('result.csv')
-(result.iloc[0, :] < result.iloc[1,:]).sum()
-(result.iloc[0, :] > result.iloc[2, :]).sum()
+def nonlinear_beta_test(baseline_factor, FACTOR = FACTOR, RET_excess = RET_excess):
+    j = 0
+    for i in FACTOR.columns[~FACTOR.columns.isin(baseline_factor)]:
+        tic = time.time()
+        select = baseline_factor + [i]
+        beta = np.array(OLSRegression(
+            np.array(FACTOR[select]), RET_excess).beta_hat().iloc[:, 1:])
+        Result[j], Critical_left[j], Critical_right[j] = my_bootstrap(beta, average_ret_excess, B = 250, intercept= 1)
+        print("Factor", i, "Elapsed Time =", time.time() - tic)
+        if Result[j] < Critical_left[j] or Result[j] > Critical_right[j]:
+            print("The factor", i, "is nonlinear!")
+        j = j + 1
+    return Result, Critical_left, Critical_right
+
+# %% Different baseline factors.
+# Individual
+baseline_factor = []
+[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Result, Critical_left, Critical_right]
+             ).to_csv('result_individual.csv')
+# Market As baseline
+baseline_factor = ['MktRf']
+[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Result, Critical_left, Critical_right]
+             ).to_csv('result_baseline_mktrf.csv')
+# FF3 as basline  
+baseline_factor = ['MktRf', 'HML', 'SMB']
+[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Result, Critical_left,Critical_right]).to_csv('result_baseline_ff3.csv')
 
 # %%
-FACTOR.columns[~FACTOR.columns.isin(
-    [baseline_factor])][result.iloc[0, :] > result.iloc[2, :]]
+result = pd.read_csv('result_baseline_ff3.csv')
+(result.iloc[0, :] < result.iloc[1,:]).sum()
+(result.iloc[0, :] > result.iloc[2, :]).sum()
 # %%
-plt.figure()
-for j in range(10,13):
-    plt.scatter(FACTOR.iloc[:,j], RET.iloc[:,j])
-# %%
+result = pd.read_csv('result_baseline_mktrf.csv')
+(result.iloc[0, :] < result.iloc[1,:]).sum()
+(result.iloc[0, :] > result.iloc[2, :]).sum()
