@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import statsmodels.api as sm
 from scipy import stats as ST
+from scipy import linalg as LA
 # # OLS Regression Class
 # Return OLS estimate of the conditional mean as a col.vector
 # %% OLS parameter estimate
@@ -29,37 +30,33 @@ class OLSRegression():
         return m
 # %% The local linear regression
 # We take Gaussian Kernel
-# Bandwidth is choosen as 1/T^0.4
+# Bandwidth is choosen as 1/T^0.2
 # It can be used for multidimensional case. The plot is different
-
-
 def loc_poly(Y, X):
-    N, k = np.array([X]).T.shape
+    N = X.shape[0]
+    k = np.linalg.matrix_rank(X)
     m = np.empty(N)
     i = 0
-    h = 1/(N**(2/5))
+    h = 1/(N**(1/5))
     # grid = np.arange(start=X.min(), stop=X.max(), step=np.ptp(X)/200)
     for x in X:
-        Xx = np.mat(X).T - (np.ones([N, 1]))*x
-        Xx1 = np.concatenate((np.ones([N, 1]),
-                              Xx), axis=1)
+        Xx = X - (np.ones([N, 1]))*x
+        Xx1 = sm.add_constant(Xx)
         Wx = np.diag(ST.norm.pdf(Xx.T/h)[0])
         Sx = ((Xx1.T)@Wx@Xx1 + 1e-90*np.eye(k))
-        m[i] = ((Sx.I) @ (Xx1.T) @ Wx @ np.mat(Y).T)[0]
+        m[i] = ((LA.inv(Sx)) @ (Xx1.T) @ Wx @ Y)[0]
         i = i + 1
-    plt.figure()
-    plt.scatter(X, Y)
+    # plt.figure()
+    # plt.scatter(X, Y)
     # plt.plot(grid, m, color= 'red')
-    plt.scatter(X, m, color='red')
+    # plt.scatter(X, m, color='red')
     return m
 
 # %% Calculate the test statistic
-
-
 def kernel_test(u, X):
     N = X.shape[0]
     K = np.ones([N, N])
-    h = 1/(N**(1/5))
+    h = 1/(N**(0.2))
     if X.ndim == 2:
         k = X.shape[1]
         for i in range(0, k):
@@ -75,8 +72,9 @@ def kernel_test(u, X):
     T = N*(h**(k*0.5))*I/sigma_hat
     return T, sigma_hat, k
 # %% [markdown] # %% Bootstrap Test
-
-
+# intercept = 1: regression with intercept
+# intercept = 0: regression without intercept
+# B: number of bootstrap iterations 
 def my_bootstrap(X, Y, B=1000, intercept=1):
     N = Y.shape[0]
     m = OLSRegression(X, Y).y_hat(intercept=intercept)

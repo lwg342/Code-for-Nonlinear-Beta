@@ -6,7 +6,7 @@ from scipy import stats as ST
 from matplotlib import pyplot as plt
 import statsmodels.api as sm
 from statsmodels.distributions.empirical_distribution import ECDF
-from myfunc import OLSRegression, kernel_test, loc_poly,my_bootstrap
+from myfunc import OLSRegression, kernel_test, loc_poly, my_bootstrap
 import time
 # %% [markdown]
 # # Import Data
@@ -21,18 +21,18 @@ DATA = DATA.drop(DATA[DATA.RET == 'C'].index)
 DATA = DATA.drop(DATA[DATA.RET == 'B'].index)
 DATA.RET = DATA['RET'].astype('float')
 RET = DATA.pivot_table('RET', index='PERMNO', columns='date')
-RET = RET.dropna(0).transpose()
-RET.iloc[0:5,0:5]
+# RET = RET.dropna(0).transpose()
+RET.iloc[0:5, 0:5]
 
 # %% Import Factor Data
 FACTOR = pd.read_csv(
     'factors_zoo.csv')
 FACTOR.rename(columns={'  Date': 'date'}, inplace=True)
 FACTOR.date = pd.to_datetime(FACTOR.date, format='%Y%m%d')
-FACTOR = FACTOR.pivot_table(index = 'date')
+FACTOR = FACTOR.pivot_table(index='date')
 FACTOR = FACTOR.dropna(axis=1)
-FACTOR.iloc[0:5,0:5]
-# %% [markdown] 
+FACTOR.iloc[0:5, 0:5]
+# %% [markdown]
 # # Individual test of nonlinearity
 # %%
 RET_excess = RET - np.array([FACTOR.RF]).T
@@ -42,6 +42,74 @@ Critical_right = np.zeros(147)
 average_ret = np.array(RET.mean())
 average_ret_excess = np.array(RET_excess.mean())
 
+
+# %% Apply to all factors
+def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess):
+    j = 0
+    count = 0
+    for i in FACTOR.columns[~FACTOR.columns.isin(baseline_factor)]:
+        tic = time.time()
+        select = baseline_factor + [i]
+        beta = np.array(OLSRegression(
+            np.array(FACTOR[select]), RET_excess).beta_hat().iloc[:, 1:])
+        Result[j], Critical_left[j], Critical_right[j] = my_bootstrap(
+            beta, average_ret_excess, B=250, intercept=1)
+        print("Factor", i, "Elapsed Time =", time.time() - tic)
+        if Result[j] < Critical_left[j] or Result[j] > Critical_right[j]:
+            print("The factor", i, "is nonlinear!")
+            count = count+1
+        j = j + 1
+    print('Nonlinear Count =', count)
+    return Result, Critical_left, Critical_right
+
+
+# %% Different baseline factors.
+# Individual
+baseline_factor = []
+[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Result, Critical_left, Critical_right]
+             ).to_csv('result_individual.csv')
+# %% Market As baseline
+baseline_factor = ['MktRf']
+[T_value, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+
+Result = {'Result': T_value,
+          '2.5% Quantile of Bootstrap Distribution': Critical_left,
+          '97.5% Quantile of Bootstrap Distribution': Critical_right
+          }
+pd.DataFrame(Result,index= FACTOR.columns).to_csv('result_baseline_mktrf.csv')
+# %% FF3 as basline
+baseline_factor=['MktRf', 'HML', 'SMB']
+[Result, Critical_left, Critical_right]=nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Result, Critical_left, Critical_right]
+             ).to_csv('result_baseline_ff3.csv')
+
+# %%
+result=pd.read_csv('result_individual.csv')
+(result.iloc[0, 1:] < result.iloc[1, 1:]).sum()
+(result.iloc[0, 1:] > result.iloc[2, 1:]).sum()
+# %%
+result=pd.read_csv('result_baseline_ff3.csv')
+(result.iloc[0, :] < result.iloc[1, :]).sum()
+(result.iloc[0, :] > result.iloc[2, :]).sum()
+# %%
+result=pd.read_csv('result_baseline_mktrf.csv')
+(result.iloc[0, :] < result.iloc[1, :]).sum()
+(result.iloc[0, :] > result.iloc[2, :]).sum()
+
+# %% Test on the Market Factor
+beta=np.array(OLSRegression(
+    np.array(FACTOR['MktRf']), RET_excess).beta_hat().iloc[:, 1:])
+[a, b, c]=my_bootstrap(
+    beta, average_ret_excess, B=500, intercept=1)
+# %%
+plt.figure()
+plt.scatter(beta, average_ret_excess)
+plt.scatter(beta, OLSRegression(beta, average_ret_excess).y_hat(intercept=0))
+plt.scatter(beta, OLSRegression(beta, average_ret_excess).y_hat())
+plt.scatter(beta, loc_poly(average_ret_excess, beta))
+print(a,b,c)
+#------<Some Additional Tests>------#
 # %% Test the procedure on one additional factors
 j = 45
 FACTOR.iloc[:, j]
@@ -55,20 +123,20 @@ m1 = OLSRegression(beta, average_ret_excess).y_hat(intercept=1)
 gamma = OLSRegression(beta, average_ret_excess).beta_hat(intercept=0)
 print(gamma)
 plt.figure()
-plt.xlim(0,2)
-plt.ylim(0,0.02)
+plt.xlim(0, 2)
+plt.ylim(0, 0.02)
 plt.scatter(beta[:, 0], m)
 plt.scatter(beta[:, 0], m1)
 plt.scatter(beta[:, 0], average_ret_excess)
 plt.figure()
-plt.xlim(-1,1)
-plt.ylim(0,0.02)
+plt.xlim(-1, 1)
+plt.ylim(0, 0.02)
 plt.scatter(beta[:, 1], m)
 plt.scatter(beta[:, 1], m1)
 plt.scatter(beta[:, 1], average_ret_excess)
 plt.figure()
-plt.xlim(-1,1)
-plt.ylim(0,0.02)
+plt.xlim(-1, 1)
+plt.ylim(0, 0.02)
 plt.scatter(beta[:, 2], m)
 plt.scatter(beta[:, 2], m1)
 plt.scatter(beta[:, 2], average_ret_excess)
@@ -76,42 +144,3 @@ a = my_bootstrap(beta, average_ret_excess)
 b = my_bootstrap(beta, average_ret_excess, intercept=0)
 print(a)
 print(b)
-# %% Apply to all factors 
-def nonlinear_beta_test(baseline_factor, FACTOR = FACTOR, RET_excess = RET_excess):
-    j = 0
-    for i in FACTOR.columns[~FACTOR.columns.isin(baseline_factor)]:
-        tic = time.time()
-        select = baseline_factor + [i]
-        beta = np.array(OLSRegression(
-            np.array(FACTOR[select]), RET_excess).beta_hat().iloc[:, 1:])
-        Result[j], Critical_left[j], Critical_right[j] = my_bootstrap(beta, average_ret_excess, B = 250, intercept= 1)
-        print("Factor", i, "Elapsed Time =", time.time() - tic)
-        if Result[j] < Critical_left[j] or Result[j] > Critical_right[j]:
-            print("The factor", i, "is nonlinear!")
-        j = j + 1
-    return Result, Critical_left, Critical_right
-
-# %% Different baseline factors.
-# Individual
-baseline_factor = []
-[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Result, Critical_left, Critical_right]
-             ).to_csv('result_individual.csv')
-# Market As baseline
-baseline_factor = ['MktRf']
-[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Result, Critical_left, Critical_right]
-             ).to_csv('result_baseline_mktrf.csv')
-# FF3 as basline  
-baseline_factor = ['MktRf', 'HML', 'SMB']
-[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Result, Critical_left,Critical_right]).to_csv('result_baseline_ff3.csv')
-
-# %%
-result = pd.read_csv('result_baseline_ff3.csv')
-(result.iloc[0, :] < result.iloc[1,:]).sum()
-(result.iloc[0, :] > result.iloc[2, :]).sum()
-# %%
-result = pd.read_csv('result_baseline_mktrf.csv')
-(result.iloc[0, :] < result.iloc[1,:]).sum()
-(result.iloc[0, :] > result.iloc[2, :]).sum()
