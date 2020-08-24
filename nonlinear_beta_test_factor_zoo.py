@@ -103,9 +103,10 @@ result=pd.read_csv('result_baseline_ff3.csv')
 # %%
 j = 0
 FNAME = list()
-for i in FACTOR.columns[~FACTOR.columns.isin(baseline_factor)]:
-    FNAME.append(i)
-    print(i)
+for i in FACTOR.columns:
+    ff = i + ':::'
+    FNAME.append(ff)
+    print(ff)
 FNAME = pd.DataFrame(FNAME)
 FNAME.to_csv('FNAME.csv',index= False)
 
