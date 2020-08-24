@@ -13,17 +13,18 @@ import time
 # 1. Return data. Here I use S&P500 constituents, can be extended to more stocks
 # 2. Import Factor data from Factor Zoo
 # %% Import and cleaning data
-DATA = pd.read_csv(
-    'HPRET_monthly_correspondint_to_factor_zoo_all.csv')
-DATA.date = pd.to_datetime(DATA.date, format='%Y%m%d')
+# DATA = pd.read_csv(
+#     'HPRET_monthly_correspondint_to_factor_zoo_all.csv')
+# DATA.date = pd.to_datetime(DATA.date, format='%Y%m%d')
 
-DATA = DATA.drop(DATA[DATA.RET == 'C'].index)
-DATA = DATA.drop(DATA[DATA.RET == 'B'].index)
-DATA.RET = DATA['RET'].astype('float')
-RET = DATA.pivot_table('RET', index='PERMNO', columns='date')
+# DATA = DATA.drop(DATA[DATA.RET == 'C'].index)
+# DATA = DATA.drop(DATA[DATA.RET == 'B'].index)
+# DATA.RET = DATA['RET'].astype('float')
+# RET = DATA.pivot_table('RET', index='PERMNO', columns='date')
 # RET = RET.dropna(0).transpose()
+# RET.to_csv("cleaned_RET.csv")
+RET= pd.read_csv("cleaned_RET.csv", index_col = 'date')
 RET.iloc[0:5, 0:5]
-
 # %% Import Factor Data
 FACTOR = pd.read_csv(
     'factors_zoo.csv')
@@ -34,8 +35,11 @@ FACTOR = FACTOR.dropna(axis=1)
 FACTOR.iloc[0:5, 0:5]
 # %% [markdown]
 # # Individual test of nonlinearity
+
 # %%
 RET_excess = RET - np.array([FACTOR.RF]).T
+FACTOR.RF.iloc[0:5]
+RET_excess.iloc[0:5, 0:5]
 Result = np.zeros(147)
 Critical_left = np.zeros(147)
 Critical_right = np.zeros(147)
@@ -61,8 +65,6 @@ def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess):
         j = j + 1
     print('Nonlinear Count =', count)
     return Result, Critical_left, Critical_right
-
-
 # %% Different baseline factors.
 # Individual
 baseline_factor = []
@@ -71,13 +73,14 @@ pd.DataFrame([Result, Critical_left, Critical_right]
              ).to_csv('result_individual.csv')
 # %% Market As baseline
 baseline_factor = ['MktRf']
-[T_value, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
 
-Result = {'Result': T_value,
-          '2.5% Quantile of Bootstrap Distribution': Critical_left,
-          '97.5% Quantile of Bootstrap Distribution': Critical_right
-          }
-pd.DataFrame(Result,index= FACTOR.columns).to_csv('result_baseline_mktrf.csv')
+# Result = {'Result': T_value,
+#           '2.5% Quantile of Bootstrap Distribution': Critical_left,
+#           '97.5% Quantile of Bootstrap Distribution': Critical_right
+#           }
+pd.DataFrame([Result, Critical_left, Critical_right]
+             ).to_csv('result_baseline_mktrf.csv')
 # %% FF3 as basline
 baseline_factor=['MktRf', 'HML', 'SMB']
 [Result, Critical_left, Critical_right]=nonlinear_beta_test(baseline_factor)
@@ -89,13 +92,23 @@ result=pd.read_csv('result_individual.csv')
 (result.iloc[0, 1:] < result.iloc[1, 1:]).sum()
 (result.iloc[0, 1:] > result.iloc[2, 1:]).sum()
 # %%
-result=pd.read_csv('result_baseline_ff3.csv')
-(result.iloc[0, :] < result.iloc[1, :]).sum()
-(result.iloc[0, :] > result.iloc[2, :]).sum()
-# %%
 result=pd.read_csv('result_baseline_mktrf.csv')
 (result.iloc[0, :] < result.iloc[1, :]).sum()
 (result.iloc[0, :] > result.iloc[2, :]).sum()
+# %%
+result=pd.read_csv('result_baseline_ff3.csv')
+(result.iloc[0, :] < result.iloc[1, :]).sum()
+(result.iloc[0, :] > result.iloc[2, :]).sum()
+
+# %%
+j = 0
+FNAME = list()
+for i in FACTOR.columns[~FACTOR.columns.isin(baseline_factor)]:
+    FNAME.append(i)
+    print(i)
+FNAME = pd.DataFrame(FNAME)
+FNAME.to_csv('FNAME.csv',index= False)
+
 
 # %% Test on the Market Factor
 beta=np.array(OLSRegression(
