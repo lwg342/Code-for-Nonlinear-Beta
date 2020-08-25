@@ -13,17 +13,7 @@ import time
 # 1. Return data. Here I use S&P500 constituents, can be extended to more stocks
 # 2. Import Factor data from Factor Zoo
 # %% Import and cleaning data
-# DATA = pd.read_csv(
-#     'HPRET_monthly_correspondint_to_factor_zoo_all.csv')
-# DATA.date = pd.to_datetime(DATA.date, format='%Y%m%d')
-
-# DATA = DATA.drop(DATA[DATA.RET == 'C'].index)
-# DATA = DATA.drop(DATA[DATA.RET == 'B'].index)
-# DATA.RET = DATA['RET'].astype('float')
-# RET = DATA.pivot_table('RET', index='PERMNO', columns='date')
-# RET = RET.dropna(0).transpose()
-# RET.to_csv("cleaned_RET.csv")
-RET= pd.read_csv("cleaned_RET.csv", index_col = 'date')
+RET = pd.read_csv("cleaned_RET.csv", index_col='date')
 RET.iloc[0:5, 0:5]
 # %% Import Factor Data
 FACTOR = pd.read_csv(
@@ -35,7 +25,6 @@ FACTOR = FACTOR.dropna(axis=1)
 FACTOR.iloc[0:5, 0:5]
 # %% [markdown]
 # # Individual test of nonlinearity
-
 # %%
 RET_excess = RET - np.array([FACTOR.RF]).T
 FACTOR.RF.iloc[0:5]
@@ -48,7 +37,7 @@ average_ret_excess = np.array(RET_excess.mean())
 
 
 # %% Apply to all factors
-def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess):
+def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess, with_intercept=1):
     j = 0
     count = 0
     for i in FACTOR.columns[~FACTOR.columns.isin(baseline_factor)]:
@@ -57,7 +46,7 @@ def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess):
         beta = np.array(OLSRegression(
             np.array(FACTOR[select]), RET_excess).beta_hat().iloc[:, 1:])
         Result[j], Critical_left[j], Critical_right[j] = my_bootstrap(
-            beta, average_ret_excess, B=250, intercept=1)
+            beta, average_ret_excess, B=500, intercept=with_intercept)
         print("Factor", i, "Elapsed Time =", time.time() - tic)
         if Result[j] < Critical_left[j] or Result[j] > Critical_right[j]:
             print("The factor", i, "is nonlinear!")
@@ -65,6 +54,8 @@ def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess):
         j = j + 1
     print('Nonlinear Count =', count)
     return Result, Critical_left, Critical_right
+
+
 # %% Different baseline factors.
 # Individual
 baseline_factor = []
@@ -82,21 +73,27 @@ baseline_factor = ['MktRf']
 pd.DataFrame([Result, Critical_left, Critical_right]
              ).to_csv('result_baseline_mktrf.csv')
 # %% FF3 as basline
-baseline_factor=['MktRf', 'HML', 'SMB']
-[Result, Critical_left, Critical_right]=nonlinear_beta_test(baseline_factor)
+baseline_factor = ['MktRf', 'HML', 'SMB']
+[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
 pd.DataFrame([Result, Critical_left, Critical_right]
              ).to_csv('result_baseline_ff3.csv')
 
+# %% Taming the Factor Zoo chooses 4 Factors:
+# SMB, nxf, chcsho, pm
+baseline_factor = ['SMB', 'nxf', 'chcsho', 'pm']
+[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Result, Critical_left, Critical_right]
+             ).to_csv('result_baseline_TFZ4.csv')
 # %%
-result=pd.read_csv('result_individual.csv')
+result = pd.read_csv('result_individual_without_intercept.csv')
 (result.iloc[0, 1:] < result.iloc[1, 1:]).sum()
 (result.iloc[0, 1:] > result.iloc[2, 1:]).sum()
 # %%
-result=pd.read_csv('result_baseline_mktrf.csv')
+result = pd.read_csv('result_baseline_mktrf_without_intercept.csv')
 (result.iloc[0, :] < result.iloc[1, :]).sum()
 (result.iloc[0, :] > result.iloc[2, :]).sum()
 # %%
-result=pd.read_csv('result_baseline_ff3.csv')
+result = pd.read_csv('result_baseline_ff3_without_intercept.csv')
 (result.iloc[0, :] < result.iloc[1, :]).sum()
 (result.iloc[0, :] > result.iloc[2, :]).sum()
 
@@ -108,13 +105,13 @@ for i in FACTOR.columns:
     FNAME.append(ff)
     print(ff)
 FNAME = pd.DataFrame(FNAME)
-FNAME.to_csv('FNAME.csv',index= False)
+FNAME.to_csv('FNAME.csv', index=False)
 
 
 # %% Test on the Market Factor
-beta=np.array(OLSRegression(
+beta = np.array(OLSRegression(
     np.array(FACTOR['MktRf']), RET_excess).beta_hat().iloc[:, 1:])
-[a, b, c]=my_bootstrap(
+[a, b, c] = my_bootstrap(
     beta, average_ret_excess, B=500, intercept=1)
 # %%
 plt.figure()
@@ -122,7 +119,7 @@ plt.scatter(beta, average_ret_excess)
 plt.scatter(beta, OLSRegression(beta, average_ret_excess).y_hat(intercept=0))
 plt.scatter(beta, OLSRegression(beta, average_ret_excess).y_hat())
 plt.scatter(beta, loc_poly(average_ret_excess, beta))
-print(a,b,c)
+print(a, b, c)
 #------<Some Additional Tests>------#
 # %% Test the procedure on one additional factors
 j = 45
