@@ -13,7 +13,10 @@ import time
 # 1. Return data. Here I use S&P500 constituents, can be extended to more stocks
 # 2. Import Factor data from Factor Zoo
 # %% Import and cleaning data
-RET = pd.read_csv("cleaned_RET.csv", index_col='date')
+# RET = pd.read_csv("cleaned_RET.csv", index_col='date')
+RET = pd.read_csv(
+    "/Users/lwg342/OneDrive - University of Cambridge/Utility/Data/Stock data/Factor Zoo Data/data/port202.csv", index_col= 0, header= None)
+RET.index = pd.to_datetime(RET.index, format = '%Y%m')
 RET.iloc[0:5, 0:5]
 # %% Import Factor Data
 FACTOR = pd.read_csv(
@@ -46,7 +49,7 @@ def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess, w
         beta = np.array(OLSRegression(
             np.array(FACTOR[select]), RET_excess).beta_hat().iloc[:, 1:])
         Result[j], Critical_left[j], Critical_right[j] = my_bootstrap(
-            beta, average_ret_excess, B=500, intercept=with_intercept)
+            beta, average_ret_excess, B=1000, intercept=with_intercept)
         print("Factor", i, "Elapsed Time =", time.time() - tic)
         if Result[j] < Critical_left[j] or Result[j] > Critical_right[j]:
             print("The factor", i, "is nonlinear!")
@@ -54,7 +57,6 @@ def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess, w
         j = j + 1
     print('Nonlinear Count =', count)
     return Result, Critical_left, Critical_right
-
 
 # %% Different baseline factors.
 # Individual
@@ -92,8 +94,14 @@ result = pd.read_csv('result_individual_without_intercept.csv')
 result = pd.read_csv('result_baseline_mktrf_without_intercept.csv')
 (result.iloc[0, :] < result.iloc[1, :]).sum()
 (result.iloc[0, :] > result.iloc[2, :]).sum()
+
 # %%
 result = pd.read_csv('result_baseline_ff3_without_intercept.csv')
+(result.iloc[0, :] < result.iloc[1, :]).sum()
+(result.iloc[0, :] > result.iloc[2, :]).sum()
+
+# %%
+result = pd.read_csv('result_baseline_TFZ4.csv')
 (result.iloc[0, :] < result.iloc[1, :]).sum()
 (result.iloc[0, :] > result.iloc[2, :]).sum()
 
@@ -109,16 +117,24 @@ FNAME.to_csv('FNAME.csv', index=False)
 
 
 # %% Test on the Market Factor
-beta = np.array(OLSRegression(
-    np.array(FACTOR['MktRf']), RET_excess).beta_hat().iloc[:, 1:])
+beta = OLSRegression(
+    np.array(FACTOR[['SMB', 'nxf', 'chcsho', 'pm']]), RET_excess).beta_hat().iloc[:, 1:]
 [a, b, c] = my_bootstrap(
-    beta, average_ret_excess, B=500, intercept=1)
+    beta, average_ret_excess, B=500, intercept=0)
+# %% Test on the Market Factor with 202.csv
+beta = OLSRegression(
+    np.array(FACTOR[['SMB', 'nxf', 'chcsho', 'pm']]), np.array(RET)).beta_hat()[:, 1:]
+second_step_OLS = sm.OLS(sm.add_constant(beta), average_ret_excess).fit()
+second_step_OLS.params
+[a, b, c] = my_bootstrap(
+    beta, average_ret_excess, B=500, intercept=0)
 # %%
+i = 2
 plt.figure()
-plt.scatter(beta, average_ret_excess)
-plt.scatter(beta, OLSRegression(beta, average_ret_excess).y_hat(intercept=0))
-plt.scatter(beta, OLSRegression(beta, average_ret_excess).y_hat())
-plt.scatter(beta, loc_poly(average_ret_excess, beta))
+plt.scatter(beta[:,i], average_ret_excess)
+plt.scatter(beta[:,i], OLSRegression(beta, average_ret_excess).y_hat(intercept=0))
+plt.scatter(beta[:,i], OLSRegression(beta, average_ret_excess).y_hat())
+# plt.scatter(beta[:,i], loc_poly(average_ret_excess, beta[:,i]))
 print(a, b, c)
 #------<Some Additional Tests>------#
 # %% Test the procedure on one additional factors
