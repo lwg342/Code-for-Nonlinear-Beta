@@ -40,66 +40,59 @@ FACTOR.iloc[0:5, 0:5]
 RET_excess = RET - np.array([FACTOR.RF]).T
 FACTOR.RF.iloc[0:5]
 RET_excess.iloc[0:5, 0:5]
-Result = np.zeros(147)
-Critical_left = np.zeros(147)
-Critical_right = np.zeros(147)
 average_ret = np.array(RET.mean())
 average_ret_excess = np.array(RET_excess.mean())
-
 # %% Apply to all factors
 def nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_excess=RET_excess, with_intercept=1):
-    CombinedResult = []
+    Result = []
     tic = time.time()
     count = 0
-    for i in FACTOR.columns:
+    for i in FACTOR.columns[0:5]:
         if i in baseline_factor:
-            CombinedResult = CombinedResult.append(
+            Result.append(
                 [i, '-----', '-----', '-----'])
         else:
             select = baseline_factor + [i]
             beta = np.array(OLSRegression(
                 np.array(FACTOR[select]), RET_excess).beta_hat().iloc[:, 1:])
             Tn, Critical_left, Critical_right = my_bootstrap(
-                beta, average_ret_excess, B=1000, intercept=with_intercept))
-                CombinedResult=CombinedResult.append(
-            [i, Tn, Critical_left, Critical_right])
-            if Result[j] < Critical_left[j] or Result[j] > Critical_right[j]:
+                beta, average_ret_excess, B=500, intercept=with_intercept)
+            Result.append([i, Tn, Critical_left, Critical_right])
+            if Tn < Critical_left or Tn > Critical_right:
                 print("The factor", i, "is nonlinear!")
                 count = count+1
     print("Total Elapsed Time =", time.time() - tic)
     print('Nonlinear Count =', count)
-    return 
-
+    return Result
 
 # %% Different baseline factors.
 # Individual
 baseline_factor = []
-[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Result, Critical_left, Critical_right]
-             ).to_csv('result_individual.csv')
+Result = nonlinear_beta_test(baseline_factor)
+pd.DataFrame(Result).to_csv('Result_individual.csv')
 # %% Market As baseline
 baseline_factor = ['MktRf']
-[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Result, Critical_left, Critical_right]
-             ).to_csv('result_baseline_mktrf.csv')
+[Tn, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Tn, Critical_left, Critical_right]
+             ).to_csv('Result_baseline_mktrf.csv')
 # %% FF3 as basline
 baseline_factor = ['MktRf', 'HML', 'SMB']
-[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Result, Critical_left, Critical_right]
-             ).to_csv('result_baseline_ff3.csv')
+[Tn, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Tn, Critical_left, Critical_right]
+             ).to_csv('Result_baseline_ff3.csv')
 
 # %% Taming the Factor Zoo chooses 4 Factors:
 # SMB, nxf, chcsho, pm
 baseline_factor = ['SMB', 'nxf', 'chcsho', 'pm']
-[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Result, Critical_left, Critical_right]
-             ).to_csv('result_baseline_TFZ4.csv')
+[Tn, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Tn, Critical_left, Critical_right]
+             ).to_csv('Result_baseline_TFZ4.csv')
 # %% Taming the Factor Zoo chooses 4 Factors:
 # SMB, nxf, chcsho, pm
 baseline_factor = ['SMB', 'nxf', 'chcsho', 'pm']
-[Result, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Result, Critical_left, Critical_right]
-             ).to_csv('result_baseline_TFZ4.csv')
+[Tn, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
+pd.DataFrame([Tn, Critical_left, Critical_right]
+             ).to_csv('Result_baseline_TFZ4.csv')
 # %%
 result = pd.read_csv('result_individual_without_intercept.csv')
 (result.iloc[0, 1:] < result.iloc[1, 1:]).sum()

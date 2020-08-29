@@ -94,7 +94,7 @@ def my_bootstrap(X, Y, B=1000, intercept=1):
         m_star = OLSRegression(X, Y_star).y_hat(intercept=intercept)
         u_star_hat = Y_star - m_star
         Test[j] = kernel_test(u_star_hat, X)[0]
-        print(j)
+        # print(j)
     Critical_left = np.quantile(Test, q=0.025)
     Critical_right = np.quantile(Test, q=0.975)
     return [Test_0, Critical_left, Critical_right]
