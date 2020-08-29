@@ -54,6 +54,7 @@ def loc_poly(Y, X):
 
 # %% Calculate the test statistic
 def kernel_test(u, X):
+    X = np.array(X)
     N = X.shape[0]
     K = np.ones([N, N])
     h_prod = 1
@@ -89,18 +90,13 @@ def my_bootstrap(X, Y, B=1000, intercept=1):
         np.random.seed(j)
         u_star = (1 + np.sqrt(5)*(-1)**np.random.binomial(n=1,
                                                           p=(1 + np.sqrt(5))/(2*np.sqrt(5)), size=N))*u/2
-        # plt.scatter(X,u)
-        # plt.scatter(X,u_star)
         Y_star = m + u_star
         m_star = OLSRegression(X, Y_star).y_hat(intercept=intercept)
         u_star_hat = Y_star - m_star
         Test[j] = kernel_test(u_star_hat, X)[0]
+        print(j)
     Critical_left = np.quantile(Test, q=0.025)
     Critical_right = np.quantile(Test, q=0.975)
-
-    # plt.figure()
-    # plt.hist(Test, bins=30)
-    # print(Test_0, Critical_left, Critical_right)
     return [Test_0, Critical_left, Critical_right]
 
 # %%
