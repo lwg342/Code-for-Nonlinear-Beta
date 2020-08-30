@@ -43,8 +43,10 @@ RET_EXCESS.iloc[0:5, 0:5]
 average_ret = np.array(RET.mean())
 average_excess_ret = np.array(RET_EXCESS.mean())
 # %% Apply to all factors
+
+
 class NLBetaTest():
-    def __init__(self, FACTOR, RET_EXCESS, Result = []):
+    def __init__(self, FACTOR, RET_EXCESS, Result=[]):
         self.FACTOR = FACTOR
         self.RET_EXCESS = RET_EXCESS
         self.Result = Result
@@ -52,26 +54,33 @@ class NLBetaTest():
         self.bootstrap_iteration = 500
         self.estimating_period = 'full'
         self.testing_period = 'full'
+
     def report(self):
-        print('Header of FACTORs\n', self.FACTOR.iloc[0:3,0:3], '\n')
-        print('Header of Excess Return\n', self.RET_EXCESS.iloc[0:3,0:3], '\n')
-        print('Result is', self.Result)
+        print('Header of FACTORs\n', self.FACTOR.iloc[0:3, 0:3], '\n')
+        print('Header of Excess Return\n',
+              self.RET_EXCESS.iloc[0:3, 0:3], '\n')
+        param_list =
+        print('Result is', self.Result, '\n')
+
     def beta_estimate(self):
         # Estimating_period is a list of Booleans indicating which periods are used for estimating the betas
         if self.estimating_period == 'full':
             beta = np.array(OLSRegression(
                 np.array(self.FACTOR[self.model_factor]), self.RET_EXCESS).beta_hat().iloc[:, 1:])
-        else: 
+        else:
             beta = np.array(OLSRegression(
                 np.array(self.FACTOR.loc[self.estimating_period, self.model_factor]), self.RET_EXCESS).beta_hat().iloc[:, 1:])
         return beta
+
     def average_excess_return_estimate(self):
         if self.testing_period == 'full':
             average_excess_ret = np.array(self.RET_EXCESS.mean())
         else:
-            average_excess_ret = np.array(self.RET_EXCESS[self.testing_period].mean())
+            average_excess_ret = np.array(
+                self.RET_EXCESS[self.testing_period].mean())
         return average_excess_ret
-    def test_model(self, baseline_factor, additional_factor = [], with_intercept=1):
+
+    def test_model(self, baseline_factor, additional_factor=[], with_intercept=1):
         self.Result = []
         if any(i in baseline_factor for i in additional_factor):
             self.Result.append([additional_factor, '-----', '-----', '-----'])
@@ -83,13 +92,17 @@ class NLBetaTest():
             Tn, Critical_left, Critical_right = my_bootstrap(
                 beta, average_excess_ret, B=self.bootstrap_iteration, intercept=self.with_intercept)
             if Tn < Critical_left or Tn > Critical_right:
-                print("The factor model with", self.model_factor, "is nonlinear!")
+                print("The factor model with",
+                      self.model_factor, "is nonlinear!")
             full_name = '+'.join(baseline_factor + additional_factor)
             self.Result.append([full_name, Tn, Critical_left, Critical_right])
-        return 
+        return
+
     def save_result(self, name):
         address = '_'.join([name] + ['.csv'])
-        pd.Dataframe(self.Result, index_col= 0).to_csv(address)
+        pd.Dataframe(self.Result, index_col=0).to_csv(address)
+
+
 # def original_nonlinear_beta_test(baseline_factor, FACTOR=FACTOR, RET_EXCESS=RET_EXCESS, with_intercept=1):
 #     Result = []
 #     tic = time.time()
@@ -161,8 +174,6 @@ result = pd.read_csv('result_baseline_ff3_without_intercept.csv')
 result = pd.read_csv('result_baseline_TFZ4.csv')
 (result.iloc[0, :] < result.iloc[1, :]).sum()
 (result.iloc[0, :] > result.iloc[2, :]).sum()
-
-
 
 
 # %%
