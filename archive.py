@@ -34,3 +34,24 @@ a = my_bootstrap(beta, average_ret_excess)
 b = my_bootstrap(beta, average_ret_excess, intercept=0)
 print(a)
 print(b)
+
+# %%  For printing the names
+# %%
+j = 0
+FNAME = list()
+for i in FACTOR.columns:
+    ff = i + ':::'
+    FNAME.append(ff)
+    print(ff)
+FNAME = pd.DataFrame(FNAME)
+FNAME.to_csv('FNAME.csv', index=False)
+
+# %%# For testing a specific model
+# %% Test on a specific model
+beta = OLSRegression(
+    np.array(FACTOR[['SMB', 'nxf', 'chcsho', 'pm']]), np.array(RET)).beta_hat()[:, 1:]
+second_step_OLS = sm.OLS(sm.add_constant(beta), average_ret_excess).fit()
+second_step_OLS.params
+[a, b, c] = my_bootstrap(
+    beta, average_ret_excess, B=500, intercept=1)
+

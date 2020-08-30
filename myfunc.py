@@ -99,4 +99,3 @@ def my_bootstrap(X, Y, B=1000, intercept=1):
     Critical_right = np.quantile(Test, q=0.975)
     return [Test_0, Critical_left, Critical_right]
 
-# %%
