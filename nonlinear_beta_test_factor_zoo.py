@@ -1,5 +1,4 @@
 # %% Import Packages
-
 import pandas as pd
 import numpy as np
 from scipy import linalg as LA
@@ -14,28 +13,26 @@ DATA_Folder = '/Users/lwg342/OneDrive - University of Cambridge/Utility/Data/Sto
 
 
 class NLBetaTest():
-    def __init__(self, FACTOR, RET_EXCESS, Result=[]):
+    def __init__(self, FACTOR, RET_EXCESS):
         from tabulate import tabulate
         self.FACTOR = FACTOR
         self.RET_EXCESS = RET_EXCESS
-        self.Result = Result
+        self.Result = []
         self.with_intercept = 1
         self.bootstrap_iteration = 500
         self.estimating_period = 'full'
         self.testing_period = 'full'
-
-    def report(self):
-        print('Header of FACTORs\n', self.FACTOR.iloc[0:3, 0:3], '\n')
-        print('Header of Excess Return\n',
-              self.RET_EXCESS.iloc[0:3, 0:3], '\n')
-        param_list = [
+        self.param_list = [
             ['Cross_sectional Regression has intercept', self.with_intercept],
             ['Bootstrap Iterations', self.bootstrap_iteration],
             ['Estimating Beta With', self.estimating_period],
             ['Estimating Average Excess Return with', self.testing_period],
         ]
-        print('Result is\n', self.Result, '\n')
-        print(tabulate(param_list, ['Parameter', 'Value']))
+    def describe(self):
+        print('Header of FACTORs\n', self.FACTOR.iloc[0:3, 0:3], '\n')
+        print('Header of Excess Return\n',
+              self.RET_EXCESS.iloc[0:3, 0:3], '\n')
+        print(tabulate(self.param_list, ['Parameter', 'Value']))
 
     def beta_estimate(self):
         # Estimating_period is a list of Booleans indicating which periods are used for estimating the betas
@@ -56,7 +53,6 @@ class NLBetaTest():
         return average_excess_ret
 
     def test_model(self, baseline_factor, additional_factor=[], with_intercept=1):
-        self.Result = []
         if any(i in baseline_factor for i in additional_factor):
             self.Result.append([additional_factor, '-----', '-----', '-----'])
             print('Additional FACTORs are in the Baseline Model')
@@ -70,12 +66,30 @@ class NLBetaTest():
                 print("The factor model with",
                       self.model_factor, "is nonlinear!")
             full_name = '+'.join(baseline_factor + additional_factor)
-            self.Result.append([full_name, Tn, Critical_left, Critical_right])
+            self.Result.append(
+                [
+                    full_name, 
+                    Tn, 
+                    Critical_left, 
+                    Critical_right, 
+                    Tn < Critical_left or Tn > Critical_right
+                ])
         return
 
+    def report(self):
+        if self.Result == []:
+            print('No result yet, fit the model first')
+        else:
+            print(tabulate(self.Result, ['Model', 'Tn', 'Left CV', 'Right CV', 'Is Nonlinear?']))
+        
     def save_result(self, name):
         address = name + '.csv'
-        pd.Dataframe(self.Result, index_col=0).to_csv(address)
+        _df_ = pd.DataFrame(
+            self.Result, columns=['Model', 'Tn', 'Left CV', 'Right CV','Is Nonlinear?']).set_index('Model')
+        _df_.to_csv(address)
+        _file_ = open(name+ '_document.txt','a')
+        _file_.write(tabulate(self.param_list, ['Parameter', 'Value']))
+        _file_.close()
 # %% [markdown]
 # # Import Data
 # 1. Return data. Here I use S&P500 constituents, can be extended to more stocks
@@ -115,8 +129,10 @@ average_excess_ret = np.array(RET_EXCESS.mean())
 
 # %% Test
 Model1 = NLBetaTest(FACTOR, RET_EXCESS)
-Model1.report()
+Model1.describe()
 Model1.test_model(['MktRf'])
+Model1.report()
+Model1.save_result('Market_Factor')
 # %% Different baseline factors.
 # %% Taming the FACTOR Zoo chooses 4 FACTORs:
 # SMB, nxf, chcsho, pm
