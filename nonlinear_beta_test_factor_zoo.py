@@ -8,6 +8,7 @@ import statsmodels.api as sm
 from statsmodels.distributions.empirical_distribution import ECDF
 from myfunc import OLSRegression, kernel_test, loc_poly, my_bootstrap
 import time
+from tabulate import tabulate
 DATA_Folder = '/Users/lwg342/OneDrive - University of Cambridge/Utility/Data/Stock data/FACTOR Zoo Data/data/'
 # %% Apply to all factors
 
@@ -28,6 +29,7 @@ class NLBetaTest():
             ['Estimating Beta With', self.estimating_period],
             ['Estimating Average Excess Return with', self.testing_period],
         ]
+
     def describe(self):
         print('Header of FACTORs\n', self.FACTOR.iloc[0:3, 0:3], '\n')
         print('Header of Excess Return\n',
@@ -68,10 +70,10 @@ class NLBetaTest():
             full_name = '+'.join(baseline_factor + additional_factor)
             self.Result.append(
                 [
-                    full_name, 
-                    Tn, 
-                    Critical_left, 
-                    Critical_right, 
+                    full_name,
+                    Tn,
+                    Critical_left,
+                    Critical_right,
                     Tn < Critical_left or Tn > Critical_right
                 ])
         return
@@ -80,35 +82,41 @@ class NLBetaTest():
         if self.Result == []:
             print('No result yet, fit the model first')
         else:
-            print(tabulate(self.Result, ['Model', 'Tn', 'Left CV', 'Right CV', 'Is Nonlinear?']))
-        
+            print(tabulate(self.Result, [
+                  'Model', 'Tn', 'Left CV', 'Right CV', 'Is Nonlinear?']))
+
     def save_result(self, name):
-        address = name + '.csv'
+        address = 'result_' + name + '.csv'
         _df_ = pd.DataFrame(
-            self.Result, columns=['Model', 'Tn', 'Left CV', 'Right CV','Is Nonlinear?']).set_index('Model')
+            self.Result, columns=['Model', 'Tn', 'Left CV', 'Right CV', 'Is Nonlinear?']).set_index('Model')
         _df_.to_csv(address)
-        _file_ = open(name+ '_document.txt','a')
-        _file_.write(tabulate(self.param_list, ['Parameter', 'Value']))
-        _file_.close()
+        with open('result' + name + '_document.txt', 'w') as _file_:
+            for j in self.param_list:
+                str_j = [str(i) for i in j]
+                _file_.write(':'.join(str_j))
+                _file_.write('\n')
+            _file_.close()
+
+
 # %% [markdown]
 # # Import Data
 # 1. Return data. Here I use S&P500 constituents, can be extended to more stocks
 # 2. Import FACTOR data from FACTOR Zoo
 # %% Import and cleaning data
 # RET = pd.read_csv("cleaned_RET.csv", index_col='date')
-RET = pd.read_csv(
-    DATA_Folder + "port202.csv", index_col=0, header=None)
-RET.index = pd.to_datetime(RET.index, format='%Y%m')
-RET = RET/100 # This is special to this 202 return data
-RET.iloc[0:5, 0:5]
-
-# %% 
-# %% 5*5 portfolio
 # RET = pd.read_csv(
-#     DATA_Folder + "port_5x5.csv", header=None)
-# RET = RET.drop([0], axis=1)
-# RET.index = pd.date_range("1976-07-31", "2017-12-31", freq='M')
+#     DATA_Folder + "port202.csv", index_col=0, header=None)
+# RET.index = pd.to_datetime(RET.index, format='%Y%m')
+# RET = RET/100 # This is special to this 202 return data
 # RET.iloc[0:5, 0:5]
+
+# %%
+# %% 5*5 portfolio
+RET = pd.read_csv(
+    DATA_Folder + "port_5x5.csv", header=None)
+RET = RET.drop([0], axis=1)
+RET.index = pd.date_range("1976-07-31", "2017-12-31", freq='M')
+RET.iloc[0:5, 0:5]
 # %% Import FACTOR Data
 FACTOR = pd.read_csv(
     'factors_zoo.csv')
@@ -131,13 +139,13 @@ average_excess_ret = np.array(RET_EXCESS.mean())
 Model1 = NLBetaTest(FACTOR, RET_EXCESS)
 Model1.describe()
 Model1.test_model(['MktRf'])
+Model1.test_model(['HML'])
+Model1.test_model(['SMB'])
+Model1.test_model(['nxf'])
+Model1.test_model(['chcsho'])
+Model1.test_model(['pm'])
+Model1.test_model(['MktRf', 'HML', 'SMB'])
+Model1.test_model(['SMB', 'nxf', 'chcsho', 'pm'])
 Model1.report()
-Model1.save_result('Market_Factor')
-# %% Different baseline factors.
-# %% Taming the FACTOR Zoo chooses 4 FACTORs:
-# SMB, nxf, chcsho, pm
-baseline_factor = ['SMB', 'nxf', 'chcsho', 'pm']
-[Tn, Critical_left, Critical_right] = nonlinear_beta_test(baseline_factor)
-pd.DataFrame([Tn, Critical_left, Critical_right]
-             ).to_csv('Result_baseline_TFZ4.csv')
-
+Model1.save_result('Models')
+# %%
