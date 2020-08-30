@@ -15,7 +15,6 @@ DATA_Folder = '/Users/lwg342/OneDrive - University of Cambridge/Utility/Data/Sto
 
 class NLBetaTest():
     def __init__(self, FACTOR, RET_EXCESS):
-        from tabulate import tabulate
         self.FACTOR = FACTOR
         self.RET_EXCESS = RET_EXCESS
         self.Result = []
@@ -28,6 +27,7 @@ class NLBetaTest():
             ['Bootstrap Iterations', self.bootstrap_iteration],
             ['Estimating Beta With', self.estimating_period],
             ['Estimating Average Excess Return with', self.testing_period],
+            ['Return Dimension', self.RET_EXCESS.shape],
         ]
 
     def describe(self):
@@ -35,6 +35,7 @@ class NLBetaTest():
         print('Header of Excess Return\n',
               self.RET_EXCESS.iloc[0:3, 0:3], '\n')
         print(tabulate(self.param_list, ['Parameter', 'Value']))
+        print('\n')
 
     def beta_estimate(self):
         # Estimating_period is a list of Booleans indicating which periods are used for estimating the betas
@@ -97,26 +98,36 @@ class NLBetaTest():
                 _file_.write('\n')
             _file_.close()
 
-
+    def plot(self):
+        i = 0
+        for j in self.model_factor:
+            plt.figure()
+            plt.scatter(self.beta_estimate()[
+                        :, i], self.average_excess_return_estimate())
+            plt.scatter(self.beta_estimate()[:, i], OLSRegression(X=self.beta_estimate(
+            ), Y=self.average_excess_return_estimate()).y_hat(self.with_intercept))
+            i = i+1
 # %% [markdown]
 # # Import Data
 # 1. Return data. Here I use S&P500 constituents, can be extended to more stocks
 # 2. Import FACTOR data from FACTOR Zoo
-# %% Import and cleaning data
-# RET = pd.read_csv("cleaned_RET.csv", index_col='date')
+# %% Cleaning data
+#
 # RET = pd.read_csv(
 #     DATA_Folder + "port202.csv", index_col=0, header=None)
 # RET.index = pd.to_datetime(RET.index, format='%Y%m')
 # RET = RET/100 # This is special to this 202 return data
 # RET.iloc[0:5, 0:5]
 
+
 # %%
+RET = pd.read_csv("cleaned_RET.csv", index_col='date')
 # %% 5*5 portfolio
-RET = pd.read_csv(
-    DATA_Folder + "port_5x5.csv", header=None)
-RET = RET.drop([0], axis=1)
-RET.index = pd.date_range("1976-07-31", "2017-12-31", freq='M')
-RET.iloc[0:5, 0:5]
+# RET = pd.read_csv(
+#     DATA_Folder + "port_5x5.csv", header=None)
+# RET = RET.drop([0], axis=1)
+# RET.index = pd.date_range("1976-07-31", "2017-12-31", freq='M')
+# RET.iloc[0:5, 0:5]
 # %% Import FACTOR Data
 FACTOR = pd.read_csv(
     'factors_zoo.csv')
@@ -131,21 +142,19 @@ FACTOR.iloc[0:5, 0:5]
 RET_EXCESS = RET - np.array([FACTOR.RF]).T
 FACTOR.RF.iloc[0:5]
 RET_EXCESS.iloc[0:5, 0:5]
-average_ret = np.array(RET.mean())
-average_excess_ret = np.array(RET_EXCESS.mean())
-
-
 # %% Test
-Model1 = NLBetaTest(FACTOR, RET_EXCESS)
-Model1.describe()
-Model1.test_model(['MktRf'])
-Model1.test_model(['HML'])
-Model1.test_model(['SMB'])
-Model1.test_model(['nxf'])
-Model1.test_model(['chcsho'])
-Model1.test_model(['pm'])
-Model1.test_model(['MktRf', 'HML', 'SMB'])
-Model1.test_model(['SMB', 'nxf', 'chcsho', 'pm'])
-Model1.report()
-Model1.save_result('Models')
+# m1 = NLBetaTest(FACTOR, pd.concat([RET_EXCESS,RET_EXCESS],axis=1))
+m1 = NLBetaTest(FACTOR, RET_EXCESS)
+m1.describe()
+m1.test_model(['MktRf'])
+m1.test_model(['HML'])
+m1.test_model(['SMB'])
+m1.test_model(['nxf'])
+m1.test_model(['chcsho'])
+m1.test_model(['pm'])
+m1.test_model(['MktRf', 'HML', 'SMB'])
+m1.test_model(['SMB', 'nxf', 'chcsho', 'pm'])
+m1.report()
+m1.plot()
+m1.save_result('Models')
 # %%

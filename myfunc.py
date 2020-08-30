@@ -63,17 +63,17 @@ def kernel_test(u, X):
         for i in range(0, k):
             h = 1/(N**(1/(4+k))) * 1.06 * X[:, i].std()
             X_diff = (np.array([X[:, i]]).T - X[:, i])
-            K = K * ST.norm.pdf((X_diff)/(h))/h
+            K = K * ST.norm.pdf(X_diff/h)/h
             h_prod = h_prod * h
     else:
         k = 1
         h = 1/(N**(1/(4+k))) * 1.06 * X.std()
         X_diff = (np.array([X]).T - X)
-        K = K * ST.norm.pdf((X_diff)/(h))/h
+        K = K * ST.norm.pdf(X_diff/h)/h
         h_prod = h_prod * h
     K = K - np.diag(np.diag(K))
     I = u.T@K@u/N/(N-1)
-    sigma_hat = np.sqrt((2*(h_prod))/N/(N-1)*((u.T**2)@(K**2)@(u**2)))
+    sigma_hat = np.sqrt(2*(h_prod)/N/(N-1)*((u.T**2)@(K**2)@(u**2)))
     T = N*(np.sqrt(h_prod))*I/sigma_hat
     return T, sigma_hat, k
 # %% [markdown] # %% Bootstrap Test
