@@ -4,13 +4,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 from myfunc import OLSRegression, kernel_test, my_bootstrap
 # %% Simulation
-np.random.seed(6)
+np.random.seed(10)
 sigma = 1
 q = 1 # number of covariates
-X = np.arange(0, 5, 0.1)
+X = np.arange(0, 1, 0.0001)
 N = X.shape[0]
-Y = np.sin(X) + sigma* np.random.normal(scale=1, size=N)
-# Y = 3 + 2*(X) + 2*np.random.normal(scale=1, size=N)
+# Y = np.sin(X) + sigma* np.random.normal(scale=1, size=N)
+Y = 3 + 2*(X**2) + np.random.normal(scale=1, size=N)
 m = OLSRegression(X, Y).y_hat(intercept= 1)
 u = Y - m
 plt.figure()
@@ -41,3 +41,5 @@ plt.scatter(X[:,1], Y)
 Test_0 = kernel_test(u, X)
 result = my_bootstrap(X, Y, B=500)
 
+
+# %%

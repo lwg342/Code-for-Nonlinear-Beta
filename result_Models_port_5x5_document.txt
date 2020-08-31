@@ -1,0 +1,5 @@
+Cross_sectional Regression has intercept:1
+Bootstrap Iterations:1000
+Estimating Beta With:1976-07-30 00:00:00-2017-12-29 00:00:00
+Estimating Average Excess Return with:1976-07-30 00:00:00-2017-12-29 00:00:00
+Return Dimension:(498, 2875)
