@@ -5,9 +5,9 @@ from matplotlib import pyplot as plt
 import statsmodels.api as sm
 from scipy import stats as ST
 from scipy import linalg as LA
+
 # # OLS Regression Class
-# Return OLS estimate of the conditional mean as a col.vector
-# %% OLS parameter estimate
+# Return OLS estimate of the conditional mean as a col.vector %% OLS parameter estimate
 class OLSRegression():
     def __init__(self, X, Y):
         self.X = X

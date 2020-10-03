@@ -1,5 +1,0 @@
-Cross_sectional Regression has intercept:1
-Bootstrap Iterations:500
-Estimating Beta With:full
-Estimating Average Excess Return with:full
-Return Dimension:(498, 463)
