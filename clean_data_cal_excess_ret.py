@@ -1,4 +1,6 @@
 # %%
+import pandas as pd
+import numpy as np
 data_path = 'original_data/'
 # %% Import FACTOR Data
 FACTOR = pd.read_csv(data_path + 'factors_zoo.csv')

@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from myfunc import OLSRegression, kernel_test, loc_poly, my_bootstrap
 import time
 from tabulate import tabulate
-import pickle
+import pickle # for saving and loading class instances
 # %% Define NLBetaTest class
 
 
@@ -117,8 +117,8 @@ def publish_result(models):
         folder='/Users/lwg342/Documents/GitHub/Site-Generation/content/Nonlinear Beta Tests Results/')
     return 1
 # %%
-# with open('save.dat','rb') as _file:
-    # models = pickle.load(_file)
+with open('save.dat','rb') as _file:
+    models = pickle.load(_file)
 
 
 # %%
