@@ -62,7 +62,7 @@ class NLBetaTest():
 
     def test_model(self, baseline_factor, additional_factor=[], with_intercept=1):
         if any(i in baseline_factor for i in additional_factor):
-            self.Result.append([additional_factor, Nan, Nan, Nan])
+            self.Result.append([additional_factor, np.Nan, np.Nan, np.Nan])
             print('Additional FACTORs are in the Baseline Model')
         else:
             self.model_factor = baseline_factor + additional_factor

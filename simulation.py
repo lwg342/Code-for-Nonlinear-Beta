@@ -30,7 +30,7 @@ np.random.seed(6)
 X = np.array([np.arange(0, 5, 0.01),np.random.normal(size= 500)]).T
 N = X.shape[0]
 beta = np.array([1,2])
-Y = np.sin(X)@beta + 0.5* X[:,0]* np.random.normal(scale=1, size=N)
+# Y = np.sin(X)@beta + 0.5* X[:,0]* np.random.normal(scale=1, size=N)
 m = OLSRegression(X, Y).y_hat()
 u = Y - m
 plt.figure()
@@ -42,4 +42,16 @@ Test_0 = kernel_test(u, X)
 result = my_bootstrap(X, Y, B=500)
 
 
+# %%
+# This is the simulation to see if the method still works when we have two step estimation
+# %%
+np.random.seed(10)
+T = 500
+k = 3
+N = 300
+gamma = 0.5
+RNG = np.random.default_rng()
+sigma_F = 1
+F = RNG.normal(0, sigma_F, [T,k])
+B = RNG.uniform(low = 0.5, high= 1.5, size = [N,k])
 # %%

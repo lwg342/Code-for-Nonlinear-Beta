@@ -8,7 +8,15 @@ from scipy import linalg as LA
 
 # # OLS Regression Class
 # Return OLS estimate of the conditional mean as a col.vector %% OLS parameter estimate
-class OLSRegression():
+class Regression():
+    """
+    This defines a class for regression models and estimation
+    """
+    def __init__(self, X, Y):
+        self.X = X 
+        self.Y = Y
+    
+class OLSRegression(Regression):
     def __init__(self, X, Y):
         self.X = X
         self.Y = Y
